@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Cloudformation template for creating AWS S3 Bucket
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: (Name must begin and end with a letter or number and consist only of lowercase letters, numbers, and hyphens (-).)
+    AllowedPattern: (?=^.{3,63}$)^[a-z0-9][a-z0-9-]*[a-z0-9]
+    ConstraintDescription: Name must begin and end with a letter or number and consist only of lowercase letters, numbers, and hyphens (-).
+Resources:
+
+### bucket created for logging
+  AccessLogBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      AccessControl: LogDeliveryWrite
+######### Main bucket
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties: 
+      BucketName: !Sub ${BucketName}-s3
+########## Bucket encrypted with AES 256
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+##### Logging enabled for accesing the bucket
+      LoggingConfiguration:
+        DestinationBucketName: !Ref AccessLogBucket
+
+
+###### Bucket policy #####################
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties: 
+      PolicyDocument: 
+        Statement:
+        - Sid: limited access of bucket
+          Effect: Allow
+          Action: "s3:GetObject"
+          Principal: '*'
+          Resource: !Join
+            - ''
+            - - 'arn:aws:s3:::'
+              - !Ref S3Bucket
+              - /*
+      Bucket: !Ref S3Bucket
+ 
+Outputs:
+  BucketARN:
+    Description: The arn for the bucket that got created
+    Value: !GetAtt S3Bucket.Arn
