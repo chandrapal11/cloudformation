@@ -38,7 +38,7 @@ Resources:
         - Sid: limited access of bucket
           Effect: Allow
           Action: "s3:GetObject"
-          Principal: '*'
+          Principal: 'arn:aws:iam::AWS::AccountId:root'
           Resource: !Join
             - ''
             - - 'arn:aws:s3:::'
