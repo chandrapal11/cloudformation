@@ -1,15 +1,17 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Cloudformation template for creating AWS S3 Bucket
 
+#### Parameter defined for naming convention of Main bucket
+
 Parameters:
   BucketName:
     Type: String
     Description: (Name must begin and end with a letter or number and consist only of lowercase letters, numbers, and hyphens (-).)
     AllowedPattern: (?=^.{3,63}$)^[a-z0-9][a-z0-9-]*[a-z0-9]
     ConstraintDescription: Name must begin and end with a letter or number and consist only of lowercase letters, numbers, and hyphens (-).
-Resources:
 
-### bucket created for logging
+Resources:
+#### S3 bucket created for storing logging details for Main S3 bucket
   AccessLogBucket:
     Type: "AWS::S3::Bucket"
     Properties:
@@ -18,22 +20,38 @@ Resources:
         ServerSideEncryptionConfiguration:
         - ServerSideEncryptionByDefault:
             SSEAlgorithm: AES256
-######### Main bucket
+#### Bucket policy defined for logging bucket
+  AccesslogbucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AccessLogBucket
+      PolicyDocument: 
+        Statement:
+        - Sid: limited access of bucket
+          Effect: Allow
+          Action: "s3:*Object"
+          Principal: 'arn:aws:iam::AWS::AccountId:root'
+          Resource: !Join
+            - ''
+            - - 'arn:aws:s3:::'
+              - !Ref AccessLogBucket
+              - "/*"
+      
+
+######### Main bucket defined
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties: 
       BucketName: !Sub ${BucketName}-s3
-########## Bucket encrypted with AES 256
+########## Encryption defined for Main bucket with AES 256.
       BucketEncryption:
         ServerSideEncryptionConfiguration:
         - ServerSideEncryptionByDefault:
             SSEAlgorithm: AES256
-##### Logging enabled for accesing the bucket
+##### Access log enabled and forward to different s3 bucket.
       LoggingConfiguration:
         DestinationBucketName: !Ref AccessLogBucket
-
-
-###### Bucket policy #####################
+###### Bucket policy defined for main bucket  #####################
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties: 
@@ -41,13 +59,13 @@ Resources:
         Statement:
         - Sid: limited access of bucket
           Effect: Allow
-          Action: "s3:GetObject"
+          Action: "s3:*Object"
           Principal: 'arn:aws:iam::AWS::AccountId:root'
           Resource: !Join
             - ''
             - - 'arn:aws:s3:::'
               - !Ref S3Bucket
-              - /*
+              - "/*"
       Bucket: !Ref S3Bucket
  
 Outputs:
